@@ -9,6 +9,15 @@ mediante carga por rango, agregación por día, patrón "+N más" y virtualizaci
 
 ---
 
+## 🌐 Demo en producción
+
+**URL:** `https://calendar-app-coral-nine.vercel.app`
+
+- **Repositorio:** <https://github.com/carlos388mendoza/calendar-app>
+- **Base de datos:** Turso / libSQL (remoto)
+
+---
+
 ## ✨ Características
 
 - **CRUD completo de eventos** desde la UI (modal): crear, leer, actualizar y eliminar.
@@ -113,7 +122,8 @@ calendar-app/
 ├── scripts/
 │   └── seed.ts                    # Generador de datos falsos
 ├── docs/screenshots/              # Placeholders de capturas
-├── .env.example
+├── .env.example                   # Plantilla de variables (desarrollo local)
+├── .env.production.example        # Plantilla de variables para Vercel (sin valores reales)
 └── README.md
 ```
 
@@ -159,6 +169,9 @@ TURSO_DATABASE_URL=file:./data/calendar.db
 
 El esquema (`events` + índices) se crea automáticamente en la primera petición a la API.
 
+> Para **producción** usa `.env.production.example` como plantilla y configura esas
+> variables en Vercel (ver la sección **Despliegue en Vercel** más abajo).
+
 ### 3. Generar datos de prueba (seed)
 
 ```bash
@@ -193,6 +206,118 @@ npm run start
 
 ---
 
+## ☁️ Despliegue en Vercel
+
+La app está lista para desplegarse en **Vercel** (plan Hobby/gratuito). Sólo necesitas
+el repositorio en GitHub y una base de datos Turso remota.
+
+### Requisitos previos
+
+1. Repositorio en GitHub: <https://github.com/carlos388mendoza/calendar-app>
+2. Base de datos Turso creada. Obtén las credenciales:
+
+   ```bash
+   turso db show <nombre-de-tu-db> --url      # → libsql://...
+   turso db tokens create <nombre-de-tu-db>   # → token de acceso
+   ```
+
+3. Variables de entorno a configurar en Vercel (ver `.env.production.example`):
+
+   | Variable | Valor |
+   | --- | --- |
+   | `TURSO_DATABASE_URL` | `libsql://<tu-base>-<tu-org>.turso.io` |
+   | `TURSO_AUTH_TOKEN` | El token generado con `turso db tokens create` |
+
+### Opción A — Desde el Dashboard (recomendado)
+
+1. Entra en <https://vercel.com/new> e inicia sesión con GitHub.
+2. **Import Git Repository** → selecciona `carlos388mendoza/calendar-app`.
+3. En *Configure Project*:
+   - **Framework Preset**: `Next.js` (se detecta automáticamente).
+   - **Root Directory**: déjalo en `.` (el repo ya es la app).
+   - **Build Command**: `next build` (por defecto).
+   - **Output Directory**: `.next` (por defecto).
+   - **Install Command**: `npm install` (por defecto).
+4. Abre **Environment Variables** y agrega:
+   - `TURSO_DATABASE_URL` = `libsql://...`
+   - `TURSO_AUTH_TOKEN` = `<tu-token>`
+   Marca al menos el entorno **Production** (puedes marcar también Preview y Development).
+5. Pulsa **Deploy**. Al terminar tendrás una URL `https://<proyecto>.vercel.app`.
+6. Pega esa URL en la sección **Demo en producción** de este README.
+
+> Si cambias o agregas variables de entorno después del deploy, **vuelve a desplegar**
+> (Deployments → ⋯ → Redeploy) para que surtan efecto.
+
+### Opción B — Con la Vercel CLI
+
+```bash
+# 1. Instala la CLI (una sola vez)
+npm i -g vercel
+
+# 2. Inicia sesión (abre el navegador; este paso lo haces tú manualmente)
+vercel login
+
+# 3. Vincula el proyecto (la primera vez)
+vercel link
+
+# 4. Configura las variables de entorno en Vercel
+vercel env add TURSO_DATABASE_URL production
+vercel env add TURSO_AUTH_TOKEN production
+
+# 5. Despliegue de previsualización
+vercel
+
+# 6. Despliegue a producción
+vercel --prod
+```
+
+También hay scripts de conveniencia en `package.json`:
+
+```bash
+npm run deploy        # = vercel
+npm run deploy:prod   # = vercel --prod
+```
+
+> En Windows PowerShell, si `vercel` no se reconoce, usa `vercel.cmd` o `npx vercel`.
+> Recuerda que PowerShell puede bloquear los `.ps1` por política de ejecución; los
+> shims `.cmd` funcionan sin problema.
+
+### ¿Hace falta un `vercel.json`?
+
+**No.** El proyecto no necesita `vercel.json` porque:
+
+- Vercel **detecta Next.js automáticamente** (framework, build y output), así que no hay
+  que declarar `buildCommand`, `outputDirectory` ni `framework`.
+- No usa **cron jobs**, **rewrites/redirects** personalizados ni **headers** especiales.
+- Los Route Handlers ya declaran `export const runtime = "nodejs"` (el runtime por defecto
+  en Vercel); no se requiere configuración adicional de funciones.
+- No se necesitan `regions` ni `maxDuration` especiales: el endpoint consulta por rango
+  con índices y responde en milisegundos.
+- La única particularidad —el binding nativo de libSQL— ya está resuelta con
+  `serverExternalPackages: ["@libsql/client", "libsql"]` en `next.config.mjs`.
+
+Si en el futuro agregas **cron jobs**, **rewrites** o **headers**, entonces sí convendría
+crear un `vercel.json`.
+
+### Sembrar datos en la base remota
+
+El seed escribe en la base que indique `TURSO_DATABASE_URL`. Para poblarla en remoto:
+
+```bash
+# Opción 1 — pasar las credenciales de forma puntual (PowerShell)
+$env:TURSO_DATABASE_URL="libsql://<tu-base>-<tu-org>.turso.io"
+$env:TURSO_AUTH_TOKEN="<tu-token>"
+npm run seed
+
+# Opción 2 — crear un .env.local con las credenciales remotas y ejecutar
+npm run seed
+```
+
+> El seed **vacía la tabla** por defecto. Usa `npm run seed -- --append` para conservar
+> los eventos existentes.
+
+---
+
 ## 📜 Scripts
 
 | Script | Descripción |
@@ -203,6 +328,9 @@ npm run start
 | `npm run lint` | ESLint (config de Next). |
 | `npm run typecheck` | `tsc --noEmit` (TypeScript estricto). |
 | `npm run seed` | Genera e inserta datos falsos. |
+| `npm run seed:help` | Muestra la ayuda y opciones del seed. |
+| `npm run deploy` | Despliegue de previsualización en Vercel (requiere Vercel CLI). |
+| `npm run deploy:prod` | Despliegue a producción en Vercel (requiere Vercel CLI). |
 
 ---
 
