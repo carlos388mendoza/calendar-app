@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, "Noto Sans", sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-100 text-slate-900 antialiased;
+}
+
+/* Thin, unobtrusive scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(203 213 225) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-slate-300/70;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Prevent text/gesture feedback while dragging calendar items */
+.dragging-body {
+  cursor: grabbing !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.dragging-item {
+  pointer-events: none !important;
+}
