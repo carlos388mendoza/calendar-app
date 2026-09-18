@@ -12,7 +12,9 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "seed": "tsx scripts/seed.ts",
-    "seed:help": "tsx scripts/seed.ts --help"
+    "seed:help": "tsx scripts/seed.ts --help",
+    "deploy": "vercel",
+    "deploy:prod": "vercel --prod"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",

@@ -47,6 +47,11 @@ interface Row {
 function loadEnv(): void {
   const proc = process as unknown as { loadEnvFile?: (path?: string) => void };
   try {
+    proc.loadEnvFile?.(".env.local");
+  } catch {
+    // .env.local is optional
+  }
+  try {
     proc.loadEnvFile?.(".env");
   } catch {
     // .env is optional
